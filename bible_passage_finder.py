@@ -103,6 +103,19 @@ async def main():
             except ValueError:
                 # Skip if chapter or verse is not a valid integer or format
                 continue
+    
+    # Split transcript into chunks
+    chunk_size = 4  # Adjust chunk size
+    chunks = split_transcript_into_chunks(full_transcript, chunk_size)
+
+    # Search each chunk in the JSON
+    for chunk in chunks:
+        result = await find_text_in_json(chunk, bible_data)
+        if result:
+            book, chapter, verse, text = result
+            logging.info(f"Found in Bible: {book} {chapter}:{verse} - {text}")
+            async with aiofiles.open("passage2.txt", "a") as file:
+                await file.write(f"{book} {chapter}:{verse} - {text}\n")
 
 # Run the async main function
 asyncio.run(main())
