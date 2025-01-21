@@ -44,6 +44,8 @@ async def find_bible_passage(book, chapter, verse, bible_data):
                     for v in ch["verses"]:
                         if v["verse"] == verse:
                             return f"{book} {chapter}:{verse} - {v['text']}\n"
+                    # If verse is not found, return the first verse
+                    return f"{book} {chapter}:1 - {ch['verses'][0]['text']}\n"
     return "Passage not found."
 
 # Find text in JSON
@@ -56,7 +58,7 @@ async def find_text_in_json(chunk, bible_data):
     return None
 
 async def main():
-    video_url = "https://www.youtube.com/watch?v=q3vjcEufrvk&pp=ygUQMTUgYmlibGUgdmVyc2VzIA%3D%3D"
+    video_url = "https://www.youtube.com/watch?v=_JBKVEV7NQs&pp=ygUNcGFzdG9yIGt1bXV5aQ%3D%3D"
     video_id = get_video_id(video_url)
     
     try:
@@ -100,7 +102,10 @@ async def main():
                         logging.error(f"Invalid verse range: {verse}")
                         continue
                 else:
-                    passage = await find_bible_passage(words[i], chapter, int(verse), bible_data)
+                    try:
+                        passage = await find_bible_passage(words[i], chapter, int(verse), bible_data)
+                    except ValueError:
+                        passage = await find_bible_passage(words[i], chapter, 1, bible_data)
                     verses.append(passage)
 
                 async with aiofiles.open("passage.txt", "a") as file:
