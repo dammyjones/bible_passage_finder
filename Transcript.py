@@ -28,8 +28,6 @@ def group_transcript_by_time(transcript, interval=30):
         else:
             # Save the current group as a single row and start a new group
             grouped_transcript.append({
-                "Start Time (s)": current_start_time,
-                "End Time (s)": current_start_time + interval,
                 "Transcript": " ".join(current_group)
             })
             current_start_time += interval
@@ -38,8 +36,6 @@ def group_transcript_by_time(transcript, interval=30):
     # Add the final group
     if current_group:
         grouped_transcript.append({
-            "Start Time (s)": current_start_time,
-            "End Time (s)": current_start_time + interval,
             "Transcript": " ".join(current_group)
         })
 
