@@ -40,18 +40,17 @@ async def find_bible_passage(book, chapter, verse, bible_data):
         if book_data["name"] == book:
             for ch in book_data["chapters"]:
                 if ch["chapter"] == chapter:
+                    verses = []
                     for v in ch["verses"]:
                         if v["verse"] == verse:
                             return f"{v['text']}\n"
-                        elif '-' in str(verse):  # Checking if the verse is a range
+                        # Handle verse range
+                        if '-' in str(verse):
                             start_verse, end_verse = map(int, verse.split('-'))
-                            verses = []
-                            for v in ch["verses"]:
-                                if start_verse <= v["verse"] <= end_verse:
-                                    verses.append(f"{v["text"]}\n")
-                            return "\n".join(verses)  # Join the verses within the range
+                            if start_verse <= v["verse"] <= end_verse:
+                                verses.append(f"{v['text']}\n")                 
+                                return "".join(verses)  # Return all verses in the range
     return "Passage not found."
-
 
 # Find text in JSON
 async def find_text_in_json(chunk, bible_data):
@@ -75,7 +74,7 @@ async def main():
     full_transcript = " ".join(entry["text"] for entry in transcript)
     
     # Replace terms and clean up transcript
-    replacements = {'verse': ':', 'chapter': ' '}
+    replacements = {'verse': ':', 'chapter': ' ' }
     for word, replacement in replacements.items():
         full_transcript = full_transcript.replace(word, replacement)
 
@@ -90,14 +89,11 @@ async def main():
         return
 
     # Search for Bible books, chapters, and verses
-    for i in range(len(words)):  # Avoid index out-of-range
+    for i in range(len(words) - 2):  # Adjusted loop to avoid out-of-range
         if words[i] in bible_books:
-            print(words[i])
             try:
                 chapter = int(words[i + 1])  # Validate chapter as an integer
-                print(chapter)
-                verse = int(words[i + 2])  # Validate verse as an integer
-                print(verse)
+                verse = str(words[i + 2])  # Keep verse as string to handle ranges
                 logging.info(f"Book: {words[i]}, Chapter: {chapter}, Verse: {verse}")
                 async with aiofiles.open("passage.txt", "a") as file:
                     passage = await find_bible_passage(words[i], chapter, verse, bible_data)
@@ -105,21 +101,8 @@ async def main():
                     print(passage)
                 logging.info(passage)
             except ValueError:
-                # Skip if chapter or verse is not a valid integer
+                # Skip if chapter or verse is not a valid integer or format
                 continue
-
-    # Split transcript into chunks
-    # chunk_size = 4  # Adjust chunk size
-    # chunks = split_transcript_into_chunks(full_transcript, chunk_size)
-
-    # # Search each chunk in the JSON
-    # for chunk in chunks:
-    #     result = await find_text_in_json(chunk, bible_data)
-    #     if result:
-    #         book, chapter, verse, text = result
-    #         logging.info(f"Found in Bible: {book} {chapter}:{verse} - {text}")
-    #         async with aiofiles.open("passage2.txt", "a") as file:
-    #             await file.write(f"{book} {chapter}:{verse} - {text}\n")
 
 # Run the async main function
 asyncio.run(main())
