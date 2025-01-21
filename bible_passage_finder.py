@@ -36,22 +36,15 @@ def split_transcript_into_chunks(transcript, chunk_size):
 
 # Find text in JSON (KJV.json)
 async def find_bible_passage(book, chapter, verse, bible_data):
+    """Find a Bible passage and return it with book, chapter, and verse."""
     for book_data in bible_data["books"]:
         if book_data["name"] == book:
             for ch in book_data["chapters"]:
                 if ch["chapter"] == chapter:
-                    verses = []
                     for v in ch["verses"]:
                         if v["verse"] == verse:
-                            return f"{v['text']}\n"
-                        # Handle verse range
-                        if '-' in str(verse):
-                            start_verse, end_verse = map(int, verse.split('-'))
-                            if start_verse <= v["verse"] <= end_verse:
-                                verses.append(f"{v['text']}\n")                 
-                                return "".join(verses)  # Return all verses in the range
+                            return f"{book} {chapter}:{verse} - {v['text']}\n"
     return "Passage not found."
-
 
 # Find text in JSON
 async def find_text_in_json(chunk, bible_data):
@@ -93,8 +86,8 @@ async def main():
     for i in range(len(words) - 2):  # Adjusted loop to avoid out-of-range
         if words[i] in bible_books:
             try:
-                chapter = int(words[i + 1])  # Validate chapter as an integer
-                verse = str(words[i + 2])  # Keep verse as string to handle ranges
+                chapter = int(words[i + 1]) # Validate chapter as an integer
+                verse = str(words[i + 2]).replace(".", "")  # Keep verse as string to handle ranges
                 logging.info(f"Book: {words[i]}, Chapter: {chapter}, Verse: {verse}")
                 verses = []
                 if '-' in str(verse):
@@ -111,8 +104,8 @@ async def main():
                     verses.append(passage)
 
                 async with aiofiles.open("passage.txt", "a") as file:
-                    await file.write("\n".join(verses) + "\n")
-                logging.info("\n".join(verses))
+                    await file.write("".join(verses) + "\n")
+                logging.info("".join(verses))
 
             except ValueError:
                 # Skip if chapter or verse is not a valid integer or format
@@ -123,13 +116,13 @@ async def main():
     chunks = split_transcript_into_chunks(full_transcript, chunk_size)
 
     # Search each chunk in the JSON
-    # for chunk in chunks:
-    #     result = await find_text_in_json(chunk, bible_data)
-    #     if result:
-    #         book, chapter, verse, text = result
-    #         logging.info(f"Found in Bible: {book} {chapter}:{verse} - {text}")
-    #         async with aiofiles.open("passage2.txt", "a") as file:
-    #             await file.write(f"{book} {chapter}:{verse} - {text}\n")
+    for chunk in chunks:
+        result = await find_text_in_json(chunk, bible_data)
+        if result:
+            book, chapter, verse, text = result
+            logging.info(f"Found in Bible: {book} {chapter}:{verse} - {text}")
+            async with aiofiles.open("passage2.txt", "a") as file:
+                await file.write(f"{book} {chapter}:{verse} - {text}\n")
 
 # Run the async main function
 asyncio.run(main())
