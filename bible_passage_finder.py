@@ -43,7 +43,15 @@ async def find_bible_passage(book, chapter, verse, bible_data):
                     for v in ch["verses"]:
                         if v["verse"] == verse:
                             return f"{v['text']}\n"
+                        elif '-' in str(verse):  # Checking if the verse is a range
+                            start_verse, end_verse = map(int, verse.split('-'))
+                            verses = []
+                            for v in ch["verses"]:
+                                if start_verse <= v["verse"] <= end_verse:
+                                    verses.append(f"{v["text"]}\n")
+                            return "\n".join(verses)  # Join the verses within the range
     return "Passage not found."
+
 
 # Find text in JSON
 async def find_text_in_json(chunk, bible_data):
@@ -72,7 +80,7 @@ async def main():
         full_transcript = full_transcript.replace(word, replacement)
 
     words = full_transcript.split()
-    print(words)
+
     # Load the Bible JSON data
     try:
         async with aiofiles.open("KJV.json", mode='r') as f:
