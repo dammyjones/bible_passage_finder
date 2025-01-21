@@ -44,7 +44,14 @@ async def find_bible_passage(book, chapter, verse, bible_data):
                     for v in ch["verses"]:
                         if v["verse"] == verse:
                             return f"{v['text']}\n"
+                        # Handle verse range
+                        if '-' in str(verse):
+                            start_verse, end_verse = map(int, verse.split('-'))
+                            if start_verse <= v["verse"] <= end_verse:
+                                verses.append(f"{v['text']}\n")                 
+                                return "".join(verses)  # Return all verses in the range
     return "Passage not found."
+
 
 # Find text in JSON
 async def find_text_in_json(chunk, bible_data):
