@@ -3,6 +3,8 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import aiofiles
 import json
 import logging
+from pytube import YouTube
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -58,7 +60,7 @@ async def find_text_in_json(chunk, bible_data):
     return None
 
 async def main():
-    video_url = "https://www.youtube.com/watch?v=_JBKVEV7NQs&pp=ygUNcGFzdG9yIGt1bXV5aQ%3D%3D"
+    video_url = "https://www.youtube.com/watch?v=syf0pYfH8jI&pp=ygUbbGl2ZSB3aW5uZXJzIGNoYXBlbCBzZXJ2aWNl"
     video_id = get_video_id(video_url)
     
     try:

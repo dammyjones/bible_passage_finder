@@ -1,52 +1,60 @@
-from youtube_transcript_api import YouTubeTranscriptApi
-import pandas as pd
+import speech_recognition as sr
+import threading
+import time
 
-# Function to get the video ID from a URL
-def get_video_id(url):
-    if "v=" in url:
-        return url.split("v=")[1].split("&")[0]
-    return url.split("/")[-1]
+# Initialize recognizer
+recognizer = sr.Recognizer()
 
-# Fetch transcript
-video_url = "https://www.youtube.com/watch?v=0bbG3RasIfM&pp=ygURcGFzdG9yIGVhIGFkZWJveWU%3D"
-video_id = get_video_id(video_url)
-transcript = YouTubeTranscriptApi.get_transcript(video_id)
+# Keyword to stop the program
+EXIT_KEYWORD = "exit"
 
-# Group transcript by 30-second intervals
-def group_transcript_by_time(transcript, interval=30):
-    grouped_transcript = []
-    current_group = []
-    current_start_time = 0
+# File to save transcriptions
+TRANSCRIPTION_FILE = "transcription.txt"
 
-    for entry in transcript:
-        start_time = entry["start"]
-        text = entry["text"]
+def transcribe_audio(audio):
+    """Convert speech to text and log the result."""
+    try:
+        text = recognizer.recognize_google(audio)
+        print(f"\nYou said: {text}")
+        
+        # Save transcription to file
+        with open(TRANSCRIPTION_FILE, "a") as file:
+            file.write(text + "\n")
+        
+        # Stop if exit keyword is detected
+        if EXIT_KEYWORD in text.lower():
+            print("\nExit keyword detected. Stopping transcription...")
+            return False
 
-        # If the entry falls within the current interval, add it to the group
-        if start_time < current_start_time + interval:
-            current_group.append(text)
-        else:
-            # Save the current group as a single row and start a new group
-            grouped_transcript.append({
-                "Transcript": " ".join(current_group)
-            })
-            current_start_time += interval
-            current_group = [text]
+    except sr.UnknownValueError:
+        print("\n[Error] Could not understand audio")
+    except sr.RequestError as e:
+        print(f"\n[Error] API request failed: {e}")
 
-    # Add the final group
-    if current_group:
-        grouped_transcript.append({
-            "Transcript": " ".join(current_group)
-        })
+    return True
 
-    return grouped_transcript
+def listen_continuously():
+    """Continuously listens for speech and processes it in a separate thread."""
+    with sr.Microphone() as source:
+        print("Adjusting for ambient noise... Please wait.")
+        recognizer.adjust_for_ambient_noise(source, duration=2)
+        print("\nListening for speech... (Say 'exit' to stop)")
 
-# Group transcript into 30-second intervals
-grouped_transcript = group_transcript_by_time(transcript, interval=30)
+        while True:
+            try:
+                # Listen for speech
+                audio = recognizer.listen(source)
 
-# Convert to DataFrame
-df = pd.DataFrame(grouped_transcript)
+                # Start a thread to process the audio asynchronously
+                thread = threading.Thread(target=transcribe_audio, args=(audio,))
+                thread.start()
 
-# Save to Excel
-df.to_csv("Bible passage data.csv", index=False)
-print("Transcript split into 30-second intervals and saved to 'transcript_30s_intervals.csv'")
+                # Small delay to prevent excessive CPU usage
+                time.sleep(0.5)
+
+            except KeyboardInterrupt:
+                print("\n[INFO] Stopped by user.")
+                break
+
+if __name__ == "__main__":
+    listen_continuously()
