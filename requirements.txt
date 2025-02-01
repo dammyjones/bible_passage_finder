@@ -1,2 +1,4 @@
 youtube_transcript_api
 aiofiles
+openai-whisper
+pyaudio
